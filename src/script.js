@@ -28,6 +28,48 @@ let light = new BABYLON.HemisphericLight(
   scene
 );
 
+let RoomRoot, gunRoot, gunMat;
+const room = BABYLON.SceneLoader.ImportMeshAsync(
+  "",
+  "assets/SpaceStation.glb",
+  "",
+  scene,
+  null
+).then((container) => {
+  RoomRoot = container.meshes[0];
+  RoomRoot.name = "RoomRoot";
+  // BABYLON.SceneLoader.LoadAssetContainerAsync(
+  //   "",
+  //   "assets/Gun.glb",
+  //   scene,
+  //   null
+  // ).then((gun) => {
+  //   gunRoot = gun;
+  //   gun.meshes[0].name = "gunRoot";
+  //   gun.meshes[0].rotationQuaternion = null;
+  //   gun.meshes[0].rotation.x = Math.PI / 4;
+  //   gun.meshes[0].scaling.set(0.45, 0.45, 0.45);
+  //   gun.meshes[0].getChildren()[0].isPickable = false;
+  //   createXRExperience();
+  // });
+});
+const gun = BABYLON.SceneLoader.ImportMeshAsync(
+  "",
+  "assets/Gun1.glb",
+  "",
+  scene,
+  null
+).then((container) => {
+  gunRoot = container.meshes[0];
+  gunRoot.name = "gunRoot";
+  gunRoot.rotationQuaternion = null;
+  gunRoot.rotation.x = Math.PI / 4;
+  gunRoot.scaling.set(0.45, 0.45, 0.45);
+  let a = gunRoot.getChildren()[0];
+  gunMat = a.material;
+  a.isPickable = false;
+  createXRExperience();
+});
 const createXRExperience = async () => {
   const xr = await scene.createDefaultXRExperienceAsync();
   const webXRInput = await xr.input;
@@ -38,7 +80,9 @@ const createXRExperience = async () => {
     controller.onMotionControllerInitObservable.add((motionController) => {
       if (motionController.handness === "left") {
         controller.onMeshLoadedObservable.add((mesh) => {
-          motionController.rootMesh = gunRoot;
+          let NewGun = gunRoot.clone();
+          NewGun.material = gunMat.clone();
+          motionController.rootMesh = NewGun;
         });
         const xr_ids = motionController.getComponentIds();
         let triggerComponent = motionController.getComponent(xr_ids[0]); //xr-standard-trigger
@@ -72,40 +116,6 @@ const createXRExperience = async () => {
     });
   });
 };
-let RoomRoot, gunRoot;
-const room = BABYLON.SceneLoader.ImportMeshAsync(
-  "",
-  "assets/SpaceStation.glb",
-  "",
-  scene,
-  null
-).then((container) => {
-  RoomRoot = container.meshes[0];
-  RoomRoot.name = "RoomRoot";
-
-  const gun = BABYLON.SceneLoader.ImportMeshAsync(
-    "",
-    "assets/Gun.glb",
-    "",
-    scene,
-    null
-  ).then((container) => {
-    gunRoot = container.meshes[0];
-    gunRoot.name = "gunRoot";
-    gunRoot.rotationQuaternion = null;
-    gunRoot.rotation.x = (5 * Math.PI) / 12;
-    gunRoot.scaling.set(0.5, 0.5, 0.5);
-
-    gunRoot
-      .getChildren()[0]
-      .getChildren()
-      .forEach((part) => {
-        part.isPickable = false;
-      });
-    createXRExperience();
-  });
-});
-
 engine.runRenderLoop(() => {
   scene.render();
 });
