@@ -10,7 +10,7 @@ scene.debugLayer.show();
 
 const camera = new BABYLON.UniversalCamera(
   "camera",
-  new BABYLON.Vector3(0, 0, 0),
+  new BABYLON.Vector3(0, 1.8, 0),
   scene
 );
 camera.attachControl(canvas, true);
@@ -31,64 +31,79 @@ let light = new BABYLON.HemisphericLight(
 const createXRExperience = async () => {
   const xr = await scene.createDefaultXRExperienceAsync();
   const webXRInput = await xr.input;
-  const featuresManager = xr.baseExperience.featuresManager;
+  // const featuresManager = xr.baseExperience.featuresManager;
 
-  const teleportation = featuresManager.enableFeature(
-    BABYLON.WebXRFeatureName.TELEPORTATION,
-    "stable" /* or latest */,
-    {
-      xrInput: webXRInput,
-      // add options here
-      floorMeshes: [scene.getMeshByName("Sci-Fi Hanger_Floor_0")],
-      renderingGroupId: 1,
-    }
-  );
-
-  teleportation.rotationEnabled = true;
-  teleportation.backwardsMovementEnabled = true;
-  teleportation.backwardsTeleportationDistance = 1.0;
-  teleportation.parabolicCheckRadius = 3;
-  xr.baseExperience.camera.setTransformationFromNonVRCamera();
+  xr.baseExperience.camera.setTransformationFromNonVRCamera(camera);
   webXRInput.onControllerAddedObservable.add((controller) => {
     controller.onMotionControllerInitObservable.add((motionController) => {
-      if (
-        motionController.handness === "left" ||
-        motionController.handness === "right"
-      ) {
+      if (motionController.handness === "left") {
+        controller.onMeshLoadedObservable.add((mesh) => {
+          motionController.rootMesh = gunRoot;
+        });
         const xr_ids = motionController.getComponentIds();
-        for (let index = 0; index < xr_ids.length; index++) {
-          let component = motionController.getComponent(xr_ids[index]);
-
-          switch (xr_ids[index]) {
-            case "xr-standard-trigger":
-              component.onButtonStateChangedObservable.add(() => {
-                if (component.pressed) {
-                  console.log(
-                    xr.pointerSelection.getMeshUnderPointer(controller.uniqueId)
-                  );
-                }
-              });
-              break;
+        let triggerComponent = motionController.getComponent(xr_ids[0]); //xr-standard-trigger
+        triggerComponent.onButtonStateChangedObservable.add(() => {
+          if (triggerComponent.pressed) {
+            console.log("Trigger");
           }
-        }
+        });
       }
+      // if (
+      //   motionController.handness === "left" ||
+      //   motionController.handness === "right"
+      // ) {
+      //   const xr_ids = motionController.getComponentIds();
+      //   for (let index = 0; index < xr_ids.length; index++) {
+      //     let component = motionController.getComponent(xr_ids[index]);
+
+      //     switch (xr_ids[index]) {
+      //       case "xr-standard-trigger":
+      //         component.onButtonStateChangedObservable.add(() => {
+      //           if (component.pressed) {
+      //             console.log(
+      //               xr.pointerSelection.getMeshUnderPointer(controller.uniqueId)
+      //             );
+      //           }
+      //         });
+      //         break;
+      //     }
+      //   }
+      // }
     });
   });
 };
-let RoomRoot;
-const table = BABYLON.SceneLoader.ImportMeshAsync(
+let RoomRoot, gunRoot;
+const room = BABYLON.SceneLoader.ImportMeshAsync(
   "",
-  "assets/sci-fi_hanger.glb",
+  "assets/SpaceStation.glb",
   "",
   scene,
   null
 ).then((container) => {
   RoomRoot = container.meshes[0];
-  createXRExperience();
-  // console.log(cardHolder);
-  // console.log(chipHolder);
-  // console.log(dealerCards);
-  // console.log(cardHolder.getChildren());
+  RoomRoot.name = "RoomRoot";
+
+  const gun = BABYLON.SceneLoader.ImportMeshAsync(
+    "",
+    "assets/Gun.glb",
+    "",
+    scene,
+    null
+  ).then((container) => {
+    gunRoot = container.meshes[0];
+    gunRoot.name = "gunRoot";
+    gunRoot.rotationQuaternion = null;
+    gunRoot.rotation.x = (5 * Math.PI) / 12;
+    gunRoot.scaling.set(0.5, 0.5, 0.5);
+
+    gunRoot
+      .getChildren()[0]
+      .getChildren()
+      .forEach((part) => {
+        part.isPickable = false;
+      });
+    createXRExperience();
+  });
 });
 
 engine.runRenderLoop(() => {
