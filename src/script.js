@@ -6,7 +6,7 @@ const canvas = document.getElementById("renderCanvas");
 const engine = new BABYLON.Engine(canvas, true);
 
 const scene = new BABYLON.Scene(engine);
-scene.debugLayer.show();
+// scene.debugLayer.show();
 
 const camera = new BABYLON.UniversalCamera(
   "camera",
@@ -78,10 +78,10 @@ const createXRExperience = async () => {
   xr.baseExperience.camera.setTransformationFromNonVRCamera(camera);
   webXRInput.onControllerAddedObservable.add((controller) => {
     controller.onMotionControllerInitObservable.add((motionController) => {
-      if (motionController.handness === "left") {
+      if (motionController.handness === "right") {
         controller.onMeshLoadedObservable.add((mesh) => {
           let NewGun = gunRoot.clone();
-          NewGun.material = gunMat.clone();
+          NewGun.getChildren()[0].material = gunMat.clone();
           motionController.rootMesh = NewGun;
         });
         const xr_ids = motionController.getComponentIds();
