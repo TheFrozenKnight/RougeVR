@@ -1,12 +1,12 @@
 import * as BABYLON from "babylonjs";
-import * as GUI from "babylonjs-gui";
 import "babylonjs-loaders";
+import { CreateSkillMenu } from "./GameUI";
 
 const canvas = document.getElementById("renderCanvas");
 const engine = new BABYLON.Engine(canvas, true);
 
 const scene = new BABYLON.Scene(engine);
-// scene.debugLayer.show();
+scene.debugLayer.show();
 
 const camera = new BABYLON.UniversalCamera(
   "camera",
@@ -29,6 +29,7 @@ let light = new BABYLON.HemisphericLight(
 );
 
 let RoomRoot, gunRoot, gunMat;
+
 const room = BABYLON.SceneLoader.ImportMeshAsync(
   "",
   "assets/SpaceStation.glb",
@@ -53,6 +54,7 @@ const room = BABYLON.SceneLoader.ImportMeshAsync(
   //   createXRExperience();
   // });
 });
+
 const gun = BABYLON.SceneLoader.ImportMeshAsync(
   "",
   "assets/Gun1.glb",
@@ -70,20 +72,26 @@ const gun = BABYLON.SceneLoader.ImportMeshAsync(
   a.isPickable = false;
   createXRExperience();
 });
+
+let leftmotionController, rightmotionController;
 const createXRExperience = async () => {
   const xr = await scene.createDefaultXRExperienceAsync();
   const webXRInput = await xr.input;
+  CreateSkillMenu(scene);
   // const featuresManager = xr.baseExperience.featuresManager;
 
   xr.baseExperience.camera.setTransformationFromNonVRCamera(camera);
   webXRInput.onControllerAddedObservable.add((controller) => {
     controller.onMotionControllerInitObservable.add((motionController) => {
       if (motionController.handness === "right") {
+        rightmotionController = motionController;
+
         controller.onMeshLoadedObservable.add((mesh) => {
           let NewGun = gunRoot.clone();
           NewGun.getChildren()[0].material = gunMat.clone();
           motionController.rootMesh = NewGun;
         });
+
         const xr_ids = motionController.getComponentIds();
         let triggerComponent = motionController.getComponent(xr_ids[0]); //xr-standard-trigger
         triggerComponent.onButtonStateChangedObservable.add(() => {
@@ -91,6 +99,9 @@ const createXRExperience = async () => {
             console.log("Trigger");
           }
         });
+      }
+      if (motionController.handedness === "left") {
+        leftmotionController = motionController;
       }
       // if (
       //   motionController.handness === "left" ||
@@ -116,6 +127,7 @@ const createXRExperience = async () => {
     });
   });
 };
+
 engine.runRenderLoop(() => {
   scene.render();
 });
