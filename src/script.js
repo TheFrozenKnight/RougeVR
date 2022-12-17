@@ -1,12 +1,16 @@
 import * as BABYLON from "babylonjs";
 import "babylonjs-loaders";
+import { enemysCreator } from "./Enemy";
 import { CreateSkillMenu } from "./GameUI";
+import { PlayerShootVR, SetupVrWeapon } from "./Weapons";
 
 const canvas = document.getElementById("renderCanvas");
 const engine = new BABYLON.Engine(canvas, true);
 
 const scene = new BABYLON.Scene(engine);
 scene.debugLayer.show();
+
+scene.enablePhysics(new BABYLON.Vector3.Zero());
 
 const camera = new BABYLON.UniversalCamera(
   "camera",
@@ -57,7 +61,7 @@ const room = BABYLON.SceneLoader.ImportMeshAsync(
 
 const gun = BABYLON.SceneLoader.ImportMeshAsync(
   "",
-  "assets/Gun1.glb",
+  "assets/Gun.glb",
   "",
   scene,
   null
@@ -69,16 +73,27 @@ const gun = BABYLON.SceneLoader.ImportMeshAsync(
   gunRoot.scaling.set(0.45, 0.45, 0.45);
   let a = gunRoot.getChildren()[0];
   gunMat = a.material;
-  a.isPickable = false;
+  // a.isPickable = false;
   createXRExperience();
 });
+
+export let playerCollider = new BABYLON.MeshBuilder.CreateBox(
+  "playerCollider",
+  scene
+);
+playerCollider.scaling.set(0.5, 0.5, 0.5);
+playerCollider.collision = true;
 
 let leftmotionController, rightmotionController;
 const createXRExperience = async () => {
   const xr = await scene.createDefaultXRExperienceAsync();
   const webXRInput = await xr.input;
+
+  xr.baseExperience.sessionManager.onXRSessionInit.add(() => {
+    playerCollider.parent = xr.baseExperience.camera;
+  });
+
   CreateSkillMenu(scene);
-  // const featuresManager = xr.baseExperience.featuresManager;
 
   xr.baseExperience.camera.setTransformationFromNonVRCamera(camera);
   webXRInput.onControllerAddedObservable.add((controller) => {
@@ -90,40 +105,42 @@ const createXRExperience = async () => {
           let NewGun = gunRoot.clone();
           NewGun.getChildren()[0].material = gunMat.clone();
           motionController.rootMesh = NewGun;
+          SetupVrWeapon(scene, NewGun.getChildren()[0].getChildren()[0], 0);
+
+          // console.log(NewGun.getChildren()[0].getChildren()[0]);
         });
 
         const xr_ids = motionController.getComponentIds();
         let triggerComponent = motionController.getComponent(xr_ids[0]); //xr-standard-trigger
         triggerComponent.onButtonStateChangedObservable.add(() => {
           if (triggerComponent.pressed) {
+            PlayerShootVR(scene, 0);
             console.log("Trigger");
           }
         });
       }
+
       if (motionController.handedness === "left") {
         leftmotionController = motionController;
-      }
-      // if (
-      //   motionController.handness === "left" ||
-      //   motionController.handness === "right"
-      // ) {
-      //   const xr_ids = motionController.getComponentIds();
-      //   for (let index = 0; index < xr_ids.length; index++) {
-      //     let component = motionController.getComponent(xr_ids[index]);
 
-      //     switch (xr_ids[index]) {
-      //       case "xr-standard-trigger":
-      //         component.onButtonStateChangedObservable.add(() => {
-      //           if (component.pressed) {
-      //             console.log(
-      //               xr.pointerSelection.getMeshUnderPointer(controller.uniqueId)
-      //             );
-      //           }
-      //         });
-      //         break;
-      //     }
-      //   }
-      // }
+        controller.onMeshLoadedObservable.add((mesh) => {
+          let NewGun = gunRoot.clone();
+          NewGun.getChildren()[0].material = gunMat.clone();
+          motionController.rootMesh = NewGun;
+          SetupVrWeapon(scene, NewGun.getChildren()[0].getChildren()[0], 1);
+          enemysCreator();
+          // console.log(NewGun.getChildren()[0].getChildren()[0]);
+        });
+
+        const xr_ids = motionController.getComponentIds();
+        let triggerComponent = motionController.getComponent(xr_ids[0]); //xr-standard-trigger
+        triggerComponent.onButtonStateChangedObservable.add(() => {
+          if (triggerComponent.pressed) {
+            PlayerShootVR(scene, 1);
+            console.log("Trigger");
+          }
+        });
+      }
     });
   });
 };
