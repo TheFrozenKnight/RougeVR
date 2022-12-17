@@ -8,7 +8,7 @@ const canvas = document.getElementById("renderCanvas");
 const engine = new BABYLON.Engine(canvas, true);
 
 const scene = new BABYLON.Scene(engine);
-scene.debugLayer.show();
+// scene.debugLayer.show();
 
 scene.enablePhysics(new BABYLON.Vector3.Zero());
 
